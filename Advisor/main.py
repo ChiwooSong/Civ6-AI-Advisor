@@ -43,8 +43,8 @@ class AdvisorWorker(QObject):
         self.advice_updated.emit(msg)
         self.data_ready.emit(True) # 버튼 활성화
 
-    @pyqtSlot()
-    def perform_analysis(self):
+    @pyqtSlot(str)
+    def perform_analysis(self, version):
         """버튼 클릭 시 실행: 저장된 데이터로 AI 분석 시작"""
         if not self.current_data:
             self.advice_updated.emit("분석할 데이터가 없습니다.")
@@ -53,11 +53,11 @@ class AdvisorWorker(QObject):
         if not self.advisor:
             self.advisor = GeminiAdvisor(self.api_key)
         
-        self.advice_updated.emit("🔍 전략 분석 중... (잠시만 기다려주세요)")
+        self.advice_updated.emit(f"🔍 '{version}' 규칙으로 전략 분석 중...")
         self.data_ready.emit(False) # 분석 중 버튼 비활성화
         
         try:
-            advice = self.advisor.get_advice(self.current_data)
+            advice = self.advisor.get_advice(self.current_data, version=version)
             self.advice_updated.emit(advice)
         except Exception as e:
             self.advice_updated.emit(f"❌ 분석 중 오류 발생: {e}")

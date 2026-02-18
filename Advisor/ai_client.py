@@ -26,10 +26,13 @@ class GeminiAdvisor:
         한국어로 친절하고 전문적인 어조로 답변하십시오.
         """
 
-    def get_advice(self, game_data):
+    def get_advice(self, game_data, version="몰려드는 폭풍 (Gathering Storm)"):
         prompt = f"""현재 게임 데이터: {game_data}
+        
+플레이 중인 문명 6 버전(DLC): {version}
 
-이 상황에 대한 전략적 조언을 부탁드립니다."""
+위 데이터와 게임 버전을 고려하여 전략적 조언을 부탁드립니다.
+특히 해당 확장팩의 특수 규칙(충성도, 암흑기, 환경 효과 등)이 적용된다면 이를 고려해 주세요."""
         
         try:
             # 새로운 SDK 호출 방식

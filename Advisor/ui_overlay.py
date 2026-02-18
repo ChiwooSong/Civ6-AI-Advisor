@@ -1,9 +1,9 @@
 import sys
-from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QTextEdit, QLabel, QPushButton
+from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QTextEdit, QLabel, QPushButton, QComboBox
 from PyQt6.QtCore import Qt, QPoint, pyqtSignal
 
 class AdvisorOverlay(QWidget):
-    analysis_requested = pyqtSignal() # 분석 요청 시그널
+    analysis_requested = pyqtSignal(str) # 분석 요청 시그널 (버전 정보 포함)
 
     def __init__(self):
         super().__init__()
@@ -16,7 +16,7 @@ class AdvisorOverlay(QWidget):
         # 배경을 반투명하게 설정
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         
-        self.setGeometry(100, 100, 400, 350)
+        self.setGeometry(100, 100, 400, 400) # 높이 증가 (콤보박스 공간 확보)
 
         layout = QVBoxLayout()
         
@@ -47,6 +47,26 @@ class AdvisorOverlay(QWidget):
         header_layout.setContentsMargins(0, 0, 0, 0)
         
         layout.addLayout(header_layout)
+
+        # 게임 버전 선택 콤보박스
+        self.version_combo = QComboBox()
+        self.version_combo.addItems(["오리지널 (Base Game)", "흥망성쇠 (Rise & Fall)", "몰려드는 폭풍 (Gathering Storm)"])
+        self.version_combo.setCurrentIndex(2) # 기본값: 몰려드는 폭풍
+        self.version_combo.setStyleSheet("""
+            QComboBox {
+                background-color: rgba(0, 0, 0, 150);
+                color: white;
+                border: 1px solid gold;
+                padding: 5px;
+            }
+            QComboBox QAbstractItemView {
+                background-color: #333;
+                color: white;
+                selection-background-color: gold;
+                selection-color: black;
+            }
+        """)
+        layout.addWidget(self.version_combo)
 
         # 텍스트 출력 영역
         self.text_area = QTextEdit()
@@ -99,7 +119,10 @@ class AdvisorOverlay(QWidget):
         self.analyze_btn.setEnabled(False)
         self.analyze_btn.setText("요청 중...")
         self.text_area.setPlainText("⏳ AI에게 분석을 요청하고 있습니다...")
-        self.analysis_requested.emit()
+        
+        # 선택된 게임 버전 가져오기
+        selected_version = self.version_combo.currentText()
+        self.analysis_requested.emit(selected_version)
 
     def update_advice(self, text):
         self.text_area.setMarkdown(text)

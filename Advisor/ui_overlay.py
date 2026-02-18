@@ -102,7 +102,7 @@ class AdvisorOverlay(QWidget):
         self.analysis_requested.emit()
 
     def update_advice(self, text):
-        self.text_area.setPlainText(text)
+        self.text_area.setMarkdown(text)
     
     def set_button_enabled(self, enabled):
         self.analyze_btn.setEnabled(enabled)

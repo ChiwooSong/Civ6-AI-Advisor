@@ -1,5 +1,5 @@
 import sys
-from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QTextEdit, QLabel, QPushButton
+from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QTextEdit, QLabel, QPushButton
 from PyQt6.QtCore import Qt, QPoint, pyqtSignal
 
 class AdvisorOverlay(QWidget):
@@ -16,14 +16,37 @@ class AdvisorOverlay(QWidget):
         # 배경을 반투명하게 설정
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         
-        self.setGeometry(100, 100, 400, 350) # 높이 약간 증가
+        self.setGeometry(100, 100, 400, 350)
 
         layout = QVBoxLayout()
         
-        # 제목 표시줄 역할
+        # 제목 및 종료 버튼 레이아웃
+        header_layout = QHBoxLayout()
+        
         self.title_label = QLabel("Civ 6 Gemini Advisor")
         self.title_label.setStyleSheet("color: gold; font-weight: bold; background-color: rgba(0, 0, 0, 180); padding: 5px;")
-        layout.addWidget(self.title_label)
+        header_layout.addWidget(self.title_label)
+        
+        self.close_btn = QPushButton("✕")
+        self.close_btn.setFixedSize(30, 25)
+        self.close_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.close_btn.setStyleSheet("""
+            QPushButton {
+                background-color: rgba(180, 0, 0, 200);
+                color: white;
+                font-weight: bold;
+                border: none;
+            }
+            QPushButton:hover {
+                background-color: rgba(255, 0, 0, 230);
+            }
+        """)
+        self.close_btn.clicked.connect(QApplication.instance().quit)
+        header_layout.addWidget(self.close_btn)
+        header_layout.setSpacing(0)
+        header_layout.setContentsMargins(0, 0, 0, 0)
+        
+        layout.addLayout(header_layout)
 
         # 텍스트 출력 영역
         self.text_area = QTextEdit()

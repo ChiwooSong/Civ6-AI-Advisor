@@ -1,15 +1,25 @@
 import os
 import sys
 import threading
+import signal
 from dotenv import load_dotenv
 from log_watcher import start_watching
 from ai_client import GeminiAdvisor
 from PyQt6.QtWidgets import QApplication
-from PyQt6.QtCore import QObject, pyqtSignal, pyqtSlot, QThread
+from PyQt6.QtCore import QObject, pyqtSignal, pyqtSlot, QThread, QTimer
 from ui_overlay import AdvisorOverlay
 
 # 환경 변수 로드
 load_dotenv()
+
+# --- Ctrl+C 종료를 위한 시그널 설정 ---
+def signal_handler(sig, frame):
+    print("\nCtrl+C 감지. 종료 중...")
+    QApplication.quit()
+
+signal.signal(signal.SIGINT, signal_handler)
+
+# -----------------------------------
 
 class AdvisorWorker(QObject):
     advice_updated = pyqtSignal(str) # AI 조언 업데이트 시그널

@@ -19,4 +19,5 @@ Thumbs.db
 # Documentation & Blueprints
 Dev_blueprint.md
 Google Gen AI SDK_README.md
-[Deprecated] Google AI Python SDK for the Gemini API_README.md
+\[Deprecated\] Google AI Python SDK for the Gemini API_README.md
+.gemini/

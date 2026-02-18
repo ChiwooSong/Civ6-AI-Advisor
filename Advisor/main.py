@@ -1,6 +1,5 @@
 import os
 import sys
-import time
 import threading
 from dotenv import load_dotenv
 from log_watcher import start_watching
@@ -13,31 +12,51 @@ from ui_overlay import AdvisorOverlay
 load_dotenv()
 
 class AdvisorWorker(QObject):
-    # 데이터를 전달하기 위한 시그널 정의
-    advice_updated = pyqtSignal(str)
-    
+    advice_updated = pyqtSignal(str) # AI 조언 업데이트 시그널
+    status_updated = pyqtSignal(str) # 상태 메시지 업데이트
+    data_ready = pyqtSignal(bool)    # 분석 버튼 활성화 여부
+
     def __init__(self, api_key):
         super().__init__()
         self.api_key = api_key
         self.advisor = None
-        self.current_data = None
+        self.current_data = None # 현재 턴 데이터 저장
 
     @pyqtSlot(dict)
     def process_data(self, data):
-        # 이 함수는 worker_thread에서 실행됨
+        """새로운 데이터를 받으면 저장하고 UI에 알림 (자동 분석 X)"""
+        self.current_data = data
+        turn = data.get("header", {}).get("turn", "?")
+        
+        # 상태 업데이트
+        msg = f"Turn {turn} 데이터 준비 완료.\n분석 버튼을 눌러 전략을 확인하세요."
+        self.advice_updated.emit(msg)
+        self.data_ready.emit(True) # 버튼 활성화
+
+    @pyqtSlot()
+    def perform_analysis(self):
+        """버튼 클릭 시 실행: 저장된 데이터로 AI 분석 시작"""
+        if not self.current_data:
+            self.advice_updated.emit("분석할 데이터가 없습니다.")
+            return
+
         if not self.advisor:
             self.advisor = GeminiAdvisor(self.api_key)
         
-        # 분석 시작 알림
-        self.advice_updated.emit("🔍 새로운 상황 판단 중...")
+        self.advice_updated.emit("🔍 전략 분석 중... (잠시만 기다려주세요)")
+        self.data_ready.emit(False) # 분석 중 버튼 비활성화
         
         try:
-            # 실제 AI 분석 (네트워크 통신)
-            advice = self.advisor.get_advice(data)
-            # 분석 결과 전달
+            advice = self.advisor.get_advice(self.current_data)
             self.advice_updated.emit(advice)
         except Exception as e:
             self.advice_updated.emit(f"❌ 분석 중 오류 발생: {e}")
+        finally:
+            self.data_ready.emit(True) # 다시 활성화
+
+# 시그널 전달용 헬퍼 클래스
+class SignalEmitter(QObject):
+    data_received = pyqtSignal(dict)
 
 class AdvisorApp:
     def __init__(self):
@@ -47,15 +66,7 @@ class AdvisorApp:
         self.worker = None
         self.worker_thread = None
         self.observer = None
-
-    def on_log_update(self, data):
-        # log_watcher 스레드에서 호출됨 -> 메인 스레드의 worker에게 데이터 전달
-        if self.worker:
-            # 스레드 간 안전한 신호 전달 (QueuedConnection 자동 적용)
-            self.data_signal.emit(data)
-
-    # 데이터 전달용 내부 시그널
-    data_signal = pyqtSignal(dict)
+        self.data_signal = None
 
     def run(self):
         print("=== Civ6 Gemini Strategist Advisor ===")
@@ -66,36 +77,36 @@ class AdvisorApp:
 
         app = QApplication(sys.argv)
         
-        # UI 오버레이
         self.overlay = AdvisorOverlay()
         self.overlay.show()
 
-        # --- 백그라운드 워커 스레드 설정 ---
+        # --- 워커 스레드 설정 ---
         self.worker_thread = QThread()
         self.worker = AdvisorWorker(self.api_key)
         self.worker.moveToThread(self.worker_thread)
         
-        # 시그널 연결
-        # 1. 앱 클래스의 시그널 -> 워커의 슬롯
+        # 1. 로그 데이터 수신 -> 워커 데이터 처리 (저장)
         self.data_signal = SignalEmitter()
         self.data_signal.data_received.connect(self.worker.process_data)
         
-        # 2. 워커의 결과 시그널 -> UI 업데이트
+        # 2. UI 버튼 클릭 -> 워커 분석 시작
+        self.overlay.analysis_requested.connect(self.worker.perform_analysis)
+
+        # 3. 워커 결과 -> UI 업데이트
         self.worker.advice_updated.connect(self.overlay.update_advice)
-        
+        self.worker.data_ready.connect(self.overlay.set_button_enabled) # 버튼 활성화 제어
+
         self.worker_thread.start()
-        # --------------------------------
+        # ------------------------
 
         # 로그 감시 시작
         print(f"로그 모니터링 시작: {self.log_path}")
         self.observer = start_watching(self.log_path, lambda d: self.data_signal.data_received.emit(d))
 
-        print("Advisor 실행 중...")
+        print("Advisor 실행 중... (창을 닫으면 종료됩니다)")
         
         try:
-            exit_code = app.exec()
-            self.cleanup()
-            sys.exit(exit_code)
+            sys.exit(app.exec())
         except SystemExit:
             self.cleanup()
 
@@ -107,12 +118,6 @@ class AdvisorApp:
             self.worker_thread.wait()
         print("종료합니다.")
 
-# 시그널을 보내기 위한 간단한 클래스
-class SignalEmitter(QObject):
-    data_received = pyqtSignal(dict)
-
 if __name__ == "__main__":
-    # AdvisorApp에서 시그널을 정의하려면 QObject 상속이 필요하므로 
-    # 대신 SignalEmitter를 사용하거나 구조를 약간 변경합니다.
     app = AdvisorApp()
     app.run()

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Mod id="CIV6-GEMINI-STRATEGIST-002" version="2">
+  <Properties>
+    <Name>Civ6 Gemini Strategist</Name>
+    <Description>Exports game data to Lua.log for AI analysis. Optimized for Compatibility.</Description>
+    <Teaser>AI Advisor for Civ 6</Teaser>
+    <Authors>Gemini CLI User</Authors>
+    <CompatibleVersions>1.2,2.0</CompatibleVersions>
+  </Properties>
+  <InGameActions>
+    <AddGameplayScripts id="GeminiStrategistScripts">
+      <File>DataExtractor.lua</File>
+    </AddGameplayScripts>
+  </InGameActions>
+  <Files>
+    <File>DataExtractor.lua</File>
+  </Files>
+</Mod>

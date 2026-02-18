@@ -1,0 +1,4 @@
+google-genai
+watchdog
+PyQt6
+python-dotenv
